@@ -1,7 +1,5 @@
 import scrapy
 import os
-import re
-from datetime import datetime, timedelta, timezone
 
 
 class ArxivSpider(scrapy.Spider):
@@ -14,21 +12,22 @@ class ArxivSpider(scrapy.Spider):
         categories = [c.strip() for c in categories.split(",")]
         self.target_categories = set(categories)
 
-        # 用官方 API，每个分类查询最近1天的论文，最多500篇
+        # 正确的 arXiv API 格式
         self.start_urls = [
-            f"https://export.arxiv.org/search/?searchtype=cat&query={cat}"
-            f"&start=0&max_results=300"
+            f"http://export.arxiv.org/api/query?search_query=cat:{cat}&start=0&max_results=300&sortBy=submittedDate&sortOrder=descending"
             for cat in categories
         ]
 
     def parse(self, response):
-        # API 返回 Atom XML，用 xpath 解析
         response.selector.remove_namespaces()
 
         for entry in response.xpath("//entry"):
             arxiv_id_url = entry.xpath("id/text()").get("")
             # id 格式: http://arxiv.org/abs/2401.12345v1
             arxiv_id = arxiv_id_url.split("/abs/")[-1].split("v")[0]
+
+            if not arxiv_id:
+                continue
 
             # 获取所有分类
             paper_categories = set(
@@ -43,8 +42,4 @@ class ArxivSpider(scrapy.Spider):
                 }
                 self.logger.info(
                     f"Found paper {arxiv_id} with categories {paper_categories}"
-                )
-            else:
-                self.logger.debug(
-                    f"Skipped {arxiv_id}: {paper_categories}"
                 )
