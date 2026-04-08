@@ -723,16 +723,10 @@ function parseJsonlData(jsonlText, date) {
       }
       
       let allCategories = Array.isArray(paper.categories) ? paper.categories : [paper.categories];
-      
-      const primaryCategory = allCategories[0];
-      
-      if (!result[primaryCategory]) {
-        result[primaryCategory] = [];
-      }
-      
+
       const summary = paper.AI && paper.AI.tldr ? paper.AI.tldr : paper.summary;
       
-      result[primaryCategory].push({
+      const paperObj = {
         title: paper.title,
         url: paper.abs || paper.pdf || `https://arxiv.org/abs/${paper.id}`,
         authors: Array.isArray(paper.authors) ? paper.authors.join(', ') : paper.authors,
@@ -748,6 +742,14 @@ function parseJsonlData(jsonlText, date) {
         code_url: paper.code_url || '',
         code_stars: paper.code_stars || 0,
         code_last_update: paper.code_last_update || ''
+      };
+      
+      // 将论文归入它所有的分类
+      allCategories.forEach(cat => {
+        if (!result[cat]) {
+          result[cat] = [];
+        }
+        result[cat].push(paperObj);
       });
     } catch (error) {
       console.error('解析JSON行失败:', error, line);
