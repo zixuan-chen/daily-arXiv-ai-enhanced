@@ -712,6 +712,8 @@ async function loadPapersByDate(date) {
 function parseJsonlData(jsonlText, date) {
   const result = {};
   
+  const TARGET_CATEGORIES = new Set(['cs.CV', 'cs.AI', 'cs.RO', 'cs.LG']);
+  
   const lines = jsonlText.trim().split('\n');
   
   lines.forEach(line => {
@@ -723,7 +725,7 @@ function parseJsonlData(jsonlText, date) {
       }
       
       let allCategories = Array.isArray(paper.categories) ? paper.categories : [paper.categories];
-
+      
       const summary = paper.AI && paper.AI.tldr ? paper.AI.tldr : paper.summary;
       
       const paperObj = {
@@ -743,14 +745,18 @@ function parseJsonlData(jsonlText, date) {
         code_stars: paper.code_stars || 0,
         code_last_update: paper.code_last_update || ''
       };
-      
-      // 将论文归入它所有的分类
-      allCategories.forEach(cat => {
+
+      // 只归入属于目标分类的category
+      const matchedCats = allCategories.filter(cat => TARGET_CATEGORIES.has(cat));
+      const categoriesToIndex = matchedCats.length > 0 ? matchedCats : [allCategories[0]];
+
+      categoriesToIndex.forEach(cat => {
         if (!result[cat]) {
           result[cat] = [];
         }
         result[cat].push(paperObj);
       });
+
     } catch (error) {
       console.error('解析JSON行失败:', error, line);
     }
